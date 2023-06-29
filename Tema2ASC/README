@@ -1,0 +1,49 @@
+solver_neopt{
+    Am alocat dinamic matricele de care am nevoie si am facut transpusele lui A si B.
+    Am initializat cu 0 matricele definite mai sus(chiar daca nu e necesar dar e varianta neoptimizata deci cu prea cont:)).
+    Apoi am luat pe rand inmultirile tinand cont de faptul ca A este superior triangulara, adica am luat doar inmultirile de peste diagonala principala, plecand de fiecare data cu k = i-ul curent.
+    Pentru At am tinut cont ca este inferior triangulara, si am plecat de la k = j ul curent.
+    Apoi am inmultit B transpus cu ea insasi.
+    Am adunat apoi rezultatele pentru a obtine C, si am dat free la toate matricele alocate.
+}
+solver_opt{
+    Am optimizat algoritmul prin cele doua metode prezentate in laboratorul 5.
+    Am definit niste pointeri register double pentru a ma ajuta in implementare.
+    Mai intai am adaugat o suma pentru a permite o utilizare optima a resurselor.
+    Apoi am rezolvat problema accesului la vectori. Am tinut cont in continuare de faptul ca A si At sunt triangulare.
+    Pentru fiecare inmultire de matrice am aplicat cele doua optimizari, pastrand regula lui k care pleaca de la i sau j pentru matrice triughiulare.
+    Totodata am ales pa si pb pe care urmeaza sa ii folosim in inmultire in functie de natura matricei.
+}
+solver_blas{
+    Am facut mai intai o copie a matricei B ce urmeaza sa fie suprascrisa.
+    Mai intai am rezolvat A * B2, punand rezultatul in B2 prin functia dtrmm, care tine cont de faptul ca A este triangulara.
+    Apoi am facut acelasi lucru pentru B2 * At, unde B2 este rezultatul primii inmultiri. Am dat parametrii pentru dtrmm astfel incat sa stie ca At este transpusa lui A.
+    la final avand in B2 rezultatul A * B * At, am folosit dgemm pentru a aduna B2 cu Bt * Bt, intrucat niciuna dintre matricele ramase nu mai este triangulara, iar dgemm este capabil sa execute ecuatii de forma A + B * C.
+    Am returnat apoi rezultatul.
+}
+cache{
+    Din cate se poate vedea din fisierele .cache, blas are mereu cele mai putine refs(fie ca e vorba de I refs, D refs, etc), si totodata cele mai putine branches. Acest lucru se datoreaza implementarii functiilor BLAS,
+    care sunt facute sa acceseze memoria secvential, ceea ce imbunatateste cache ul. Totodata ele sunt paralelizate si optimizate pentru cea mai buna performanta.
+    I refs(instruction references) reprezinta numarul total de instructiuni executate de program.
+    D refs(data references) reprezinta numarul total de referinte de memorie facute de program(ceea ce include si operatia de read si pe cea de write).
+    Branches reprezinta numarul total de branch instructions executate de program.
+    Opt vs Neopt{
+        Optimizarile facute de mana aduc o imbunatatire destul de mare cand vine vorba de cache. Avantajele solverului optimizat sunt:
+        Nr mult mai mic de Irefs - datorat optimizarii constantelor in bucle si modului in care se executa for-urile. Prin utilizarea unei constante in bucle(vs referinta din cadrul unui vector),
+                                   compilatorul poate retine suma din for-uri intr-un registru, si astfel putand sa utilizeze optim aceasta resursa.
+        Nr mult mai mic de Drefs - deoarece am imbunatatit foarte mult accesul la variabilele de tip vectorial, deci am scazut drastic numarul de expresii aritmetice complexe necesare
+                                   pentru a obtine adresa unui vector.
+        Nr de branches este totusi similar pentru ca nu am redus neaparat numarul de jumps din cod, asadar branch instructions raman similare.
+    }
+}
+analiza_comparativa{
+    Se observa o crestere exponentiala de diferenta intre timpul de rulare dintre varianta neoptimizata, varianta optimizata si cea blas.
+    Blas isi pastreaza un timp de executie foarte bun chiar si pentru cel mai mare test(N = 2500), timpul crescand cu doar 8.09 secunde fata de cel mai mic test(N = 200).
+        Acest lucru este clar datorat faptului ca Blas este o librarie implementata cu ideea de optimizare pe primul loc. Fiind foarte low level, este evident de ce este atat de eficienta.
+    Programul neoptimizat este cel care sufera cel mai mult cu cat crestem numarul de linii si de coloane, cu o diferenta de 390 de secunde intre Nmin si Nmax. 
+        Scalabilitatea este mereu cea mai mare problema cand rezolvi ceva doar pentru a obtine rezultatul corect. In implementare nu sunt luate deloc in considerare alte obiective decat cel 
+        de a rezolva o problema matematic corect.
+    Programul optimizat, chiar daca incomparabil cu cel rezolvat cu functii blas, este mult mai bun cand vine vorba de scalabilitate decat cel neoptimizat. Acest lucru este datorat motivelor
+        enumerate si la cache: imbunatatirea accesului la variabile de tip vectorial, retinerea sumelor din bucle in constante accesate mai usor prin registrii, imbunatatirea flow-ului programului,
+        renuntarea la operatii redundante sau inutile.
+}
