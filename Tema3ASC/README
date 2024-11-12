@@ -1,0 +1,148 @@
+Am implementat folosind metoda Linear probing si am ales o functie de hash foarte simpla pentru a nu avea
+probleme de acolo(hash = key % size);
+Am folosit 3 functii ajutatoare pentru fiecare dintre operatii(in afara de init si free):
+reshapeKernel: idk calculeaza indexul thread-ului curent. Mai intai verific daca key de la index-ul curent 
+                exista(daca nu e key_invalid). Daca e un key valid, ii aplicam functia hash si cautam un loc
+                liber in noul hashTable. Cand il gasim ii dam valoarea key_invalid, pentru a ne asigura ca
+                ca nu avem mai multe thread-uri care isi dau overwrite. Odata gasit, copiem cheia si valoarea
+                si continuam pana toate thread-urile isi termina procesul(pana golim hashTable-ul vechi).
+
+insertBatchKernel: idk e la fel ca la reshapeKernel. Extragem valoarea si key-ul de la indexul curent, apoi
+                    aplicam functia hash. Facem Linear probing pana gasim un loc liber sau chiar key-ul dat.
+                    Tot ca la reshapeKernel facem valorile 0 pentru a nu avea mai multe thread-uri care se 
+                    incurca intre ele. Odata ce gasim ce cautam, updatam value. Daca key este nou, incrementam
+                    tempSize al hashTable-ului. Continuam pentru toti idk.
+
+getBatchKernel: idx e la fel ca mai sus, si tot ca mai sus, extragem valoarea si aplicam functia hash. Facem 
+                linear probing pana gasim un loc liber sau chiar key-ul dat. Odata gasit, facem exchange cu 
+                valoarea de la index pentru a nu incurca thread-urile intre ele.
+
+Pentru functiile GpuHashTable am explicat prin comentarii destul de in detaliu.
+
+Aceste rezultate mi-au aparut pe hpsl folosind apptainer.
+
+Rezultate 
+
+------- Test T1 START   ----------
+
+HASH_BATCH_INSERT   count: 500000           speed: 84M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 500000           speed: 67M/sec          loadfactor: 50%
+HASH_BATCH_GET      count: 500000           speed: 133M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 500000           speed: 130M/sec         loadfactor: 50%
+----------------------------------------------
+AVG_INSERT: 75 M/sec,   AVG_GET: 132 M/sec,     MIN_SPEED_REQ: 0 M/sec
+
+
+------- Test  T1 END    ----------       [ OK RESULT:  15  pts ]
+
+Total so far:  15 / 80
+
+
+
+------- Test T2 START   ----------
+
+HASH_BATCH_INSERT   count: 1000000          speed: 95M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 1000000          speed: 72M/sec          loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 162M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 157M/sec         loadfactor: 50%
+----------------------------------------------
+AVG_INSERT: 84 M/sec,   AVG_GET: 160 M/sec,     MIN_SPEED_REQ: 20 M/sec
+
+
+------- Test  T2 END    ----------       [ OK RESULT:  15  pts ]
+
+Total so far:  30 / 80
+
+
+
+------- Test T3 START   ----------
+
+HASH_BATCH_INSERT   count: 1000000          speed: 91M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 1000000          speed: 69M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 1000000          speed: 98M/sec          loadfactor: 75%
+HASH_BATCH_INSERT   count: 1000000          speed: 46M/sec          loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 132M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 143M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 143M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 1000000          speed: 139M/sec         loadfactor: 50%
+----------------------------------------------
+AVG_INSERT: 76 M/sec,   AVG_GET: 139 M/sec,     MIN_SPEED_REQ: 40 M/sec
+
+
+------- Test  T3 END    ----------       [ OK RESULT:  15  pts ]
+
+Total so far:  45 / 80
+
+
+
+------- Test T4 START   ----------
+
+HASH_BATCH_INSERT   count: 20000000         speed: 97M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 20000000         speed: 65M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 20000000         speed: 75M/sec          loadfactor: 75%
+HASH_BATCH_INSERT   count: 20000000         speed: 44M/sec          loadfactor: 50%
+HASH_BATCH_GET      count: 20000000         speed: 151M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 20000000         speed: 148M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 20000000         speed: 145M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 20000000         speed: 134M/sec         loadfactor: 50%
+----------------------------------------------
+AVG_INSERT: 70 M/sec,   AVG_GET: 145 M/sec,     MIN_SPEED_REQ: 50 M/sec
+
+
+------- Test  T4 END    ----------       [ OK RESULT:  15  pts ]
+
+Total so far:  60 / 80
+
+
+
+------- Test T5 START   ----------
+
+HASH_BATCH_INSERT   count: 50000000         speed: 85M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 50000000         speed: 63M/sec          loadfactor: 50%
+HASH_BATCH_GET      count: 50000000         speed: 141M/sec         loadfactor: 50%
+HASH_BATCH_GET      count: 50000000         speed: 129M/sec         loadfactor: 50%
+----------------------------------------------
+AVG_INSERT: 74 M/sec,   AVG_GET: 135 M/sec,     MIN_SPEED_REQ: 50 M/sec
+
+
+------- Test  T5 END    ----------       [ OK RESULT:  10  pts ]
+
+Total so far:  70 / 80
+
+
+
+------- Test T6 START   ----------
+
+HASH_BATCH_INSERT   count: 10000000         speed: 101M/sec         loadfactor: 50%
+HASH_BATCH_INSERT   count: 10000000         speed: 69M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 10000000         speed: 82M/sec          loadfactor: 75%
+HASH_BATCH_INSERT   count: 10000000         speed: 44M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 10000000         speed: 86M/sec          loadfactor: 62%
+HASH_BATCH_INSERT   count: 10000000         speed: 66M/sec          loadfactor: 75%
+HASH_BATCH_INSERT   count: 10000000         speed: 40M/sec          loadfactor: 87%
+HASH_BATCH_INSERT   count: 10000000         speed: 27M/sec          loadfactor: 50%
+HASH_BATCH_INSERT   count: 10000000         speed: 89M/sec          loadfactor: 56%
+HASH_BATCH_INSERT   count: 10000000         speed: 83M/sec          loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 141M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 139M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 135M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 134M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 133M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 132M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 130M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 118M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 117M/sec         loadfactor: 62%
+HASH_BATCH_GET      count: 10000000         speed: 110M/sec         loadfactor: 62%
+----------------------------------------------
+AVG_INSERT: 69 M/sec,   AVG_GET: 129 M/sec,     MIN_SPEED_REQ: 50 M/sec
+
+
+------- Test  T6 END    ----------       [ OK RESULT:  10  pts ]
+
+Total so far:  80 / 80
+
+Total: 80 / 80
+
+Discutie rezultate:
+In urma testarii codului, observam ca get este mai rapid decat insert pentru toate testele, ceea ce se poate
+datora faptului ca insert are mai multe operatii ce necesita lock-uri si unlock-uri.
